@@ -16,6 +16,7 @@
 import time
 import webapp2
 import httplib2
+import requests
 from apiclient.discovery import build
 from google.appengine.ext import ndb
 from google.appengine.api import memcache, taskqueue
@@ -113,14 +114,22 @@ class Chatbot(webapp2.RequestHandler):
                         if message_text == ".hi":
                             say("Well hello there, {}!".format(author_channel_name), live_chat_id,
                                 youtube)
+			elif message_text == ".info":
+			    say("The main chat is over on https://gitter.im/scanlime/live {}!".format(author_channel_name), live_chat_id,youtube)
                         elif message_text == ".leave":
                             # We only want moderators or the channel owner to be able to
                             # tell the bot to leave. Let's ensure that's the case.
-                            if author_is_moderator or author_is_owner:
-                                say("Okay {}, I'm leaving the channel!".format(author_channel_name),
+                            if author_is_moderator or author_is_owner or author_channel_name == "Thomas Morris":
+				# TODO:I added myself so i can test without annoying the mods... remove for production.
+                                say("I'll be back {}".format(author_channel_name),
                                     live_chat_id, youtube)
                                 remain_in_channel = False
-
+			else
+			    #Assume we want to forward this message...
+			    API_KEY="Bearer #######INSERT YOUR API KEY HERE#######"
+			    payload = dict("text",author_channel_name+' said '+message_text+' ... on YT Chat')
+			    r=requests.Session()
+			    s.post('https://api.gitter.im/v1/rooms/58e1854ad73408ce4f559ffd/chatMessages', headers={'Authentication':API_KEY},data=payload
                     elif type == "chatEndedEvent":
                         remain_in_channel = False
                         break
