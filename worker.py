@@ -117,6 +117,14 @@ class Chatbot(webapp2.RequestHandler):
                         message_text = message['snippet']['textMessageDetails']['messageText']
                         message_text = message_text.encode('ascii','replace').decode()
 
+                        if message_text == ".quote":
+                            say(os.system("""curl --request POST \
+                            --url http://api.forismatic.com/api/1.0/ \
+                            --header 'cache-control: no-cache' \
+                            --form method=getQuote \
+                            --form format=text \
+                            --form lang=en"""), live_chat_id, youtube)
+
                         if message_text == ".hi":
                             say("Well hello there, {}! I'm a bot! I take messages from YT Chat and post them to Gitter!".format(author_channel_name), live_chat_id, youtube)
 
