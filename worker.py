@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """The worker thread where our chatbot magic will happen."""
+import os
 import time
 import webapp2
 import httplib2
@@ -68,7 +69,8 @@ class Chatbot(webapp2.RequestHandler):
 
         in_chat = memcache.get("{}:in_chat".format(live_chat_id))
         if in_chat is None:
-            say("Hello, I've joined the chat!", live_chat_id, youtube)
+            # say("Hello, I've joined the chat!", live_chat_id, youtube)
+            pass
 
         next_page = memcache.get("{}:nextpage".format(live_chat_id))
 
@@ -113,23 +115,26 @@ class Chatbot(webapp2.RequestHandler):
 
                     if message_type == "textMessageEvent":
                         message_text = message['snippet']['textMessageDetails']['messageText']
+                        message_text = message_text.encode('ascii','replace').decode()
 
                         if message_text == ".hi":
                             say("Well hello there, {}! I'm a bot! I take messages from YT Chat and post them to Gitter!".format(author_channel_name), live_chat_id, youtube)
+
                         elif message_text == ".info":
-                            say("The main chat is over on https://gitter.im/scanlime/live {}!".format(author_channel_name), live_chat_id, youtube)
-                        elif message_text == ".leave":
-                            # We only want moderators or the channel owner to be able to
-                            # tell the bot to leave. Let's ensure that's the case.
-                            if author_is_moderator or author_is_owner or author_channel_name == "Thomas Morris":
-                            # TODO:I added myself so i can test without annoying the mods... remove for production.
-                                say("I'll be back {}".format(author_channel_name),
-                                    live_chat_id, youtube)
-                                remain_in_channel = False
-                        else:
+                            say("The main chat is over on gitter {}! Blah Blah Blah Im a bot".format(author_channel_name), live_chat_id, youtube)
+                        
+                        elif ".norelay" not in message_text:
                             #Assume we want to forward this message...
-                            os.system("""curl -X POST -i -H "Content-Type: application/json" -H "Accept: application/json" -H "Authorization: Bearer {}" "https://api.gitter.im/v1/rooms/58e1854ad73408ce4f559ffd/chatMessages" -d '{"text":"YT RELAY- {} - {}"}'""".format(gitter_token,message_text,author_channel_name))
+                            os.system("""curl -X POST -i -H "Content-Type: application/json" -H "Accept: application/json" -H "Authorization: Bearer {}" "https://api.gitter.im/v1/rooms/58e1854ad73408ce4f559ffd/chatMessages" -d '{{"text":"YT RELAY- {} - {}"}}'""".format(gitter_token, message_text, author_channel_name))
                             #Yes, i know this is kinda hacky, but it works.
+
+                        elif message_text == ".leave" and (author_is_moderator or author_is_owner or author_channel_name == "Thomas Morris"):
+                        # We only want moderators or the channel owner to be able to
+                        # tell the bot to leave. Let's ensure that's the case.
+                            # TODO:I added myself so i can test without annoying the mods... remove for production.
+                            say("I'll be back {}".format(author_channel_name), live_chat_id, youtube)
+                            remain_in_channel = False
+
                     elif type == "chatEndedEvent":
                         remain_in_channel = False
                         break
