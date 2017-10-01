@@ -16,7 +16,6 @@
 import time
 import webapp2
 import httplib2
-import requests
 from apiclient.discovery import build
 from google.appengine.ext import ndb
 from google.appengine.api import memcache, taskqueue
@@ -24,8 +23,12 @@ from google.appengine.runtime import DeadlineExceededError
 from oauth2client.contrib.appengine import StorageByKeyName
 from oauth2client.contrib.appengine import CredentialsNDBProperty
 
-MEMCACHE_CHAT_PING_EXPIRY_TIME = 200
+#EDIT THESE!
+gitter_room_name = "scanlime/live"
+gitter_token = "APIKEY"
 
+
+MEMCACHE_CHAT_PING_EXPIRY_TIME = 200
 def say(message_text, live_chat_id, youtube):
     """Send a chat message to a YouTube live chat."""
 
@@ -112,24 +115,21 @@ class Chatbot(webapp2.RequestHandler):
                         message_text = message['snippet']['textMessageDetails']['messageText']
 
                         if message_text == ".hi":
-                            say("Well hello there, {}!".format(author_channel_name), live_chat_id,
-                                youtube)
-			elif message_text == ".info":
-			    say("The main chat is over on https://gitter.im/scanlime/live {}!".format(author_channel_name), live_chat_id,youtube)
+                            say("Well hello there, {}! I'm a bot! I take messages from YT Chat and post them to Gitter!".format(author_channel_name), live_chat_id, youtube)
+                        elif message_text == ".info":
+                            say("The main chat is over on https://gitter.im/scanlime/live {}!".format(author_channel_name), live_chat_id, youtube)
                         elif message_text == ".leave":
                             # We only want moderators or the channel owner to be able to
                             # tell the bot to leave. Let's ensure that's the case.
                             if author_is_moderator or author_is_owner or author_channel_name == "Thomas Morris":
-				# TODO:I added myself so i can test without annoying the mods... remove for production.
+                            # TODO:I added myself so i can test without annoying the mods... remove for production.
                                 say("I'll be back {}".format(author_channel_name),
                                     live_chat_id, youtube)
                                 remain_in_channel = False
-			else
-			    #Assume we want to forward this message...
-			    API_KEY="Bearer #######INSERT YOUR API KEY HERE#######"
-			    payload = dict("text",author_channel_name+' said '+message_text+' ... on YT Chat')
-			    r=requests.Session()
-			    s.post('https://api.gitter.im/v1/rooms/58e1854ad73408ce4f559ffd/chatMessages', headers={'Authentication':API_KEY},data=payload
+                        else:
+                            #Assume we want to forward this message...
+                            os.system("""curl -X POST -i -H "Content-Type: application/json" -H "Accept: application/json" -H "Authorization: Bearer {}" "https://api.gitter.im/v1/rooms/58e1854ad73408ce4f559ffd/chatMessages" -d '{"text":"YT RELAY- {} - {}"}'""".format(gitter_token,message_text,author_channel_name))
+                            #Yes, i know this is kinda hacky, but it works.
                     elif type == "chatEndedEvent":
                         remain_in_channel = False
                         break
